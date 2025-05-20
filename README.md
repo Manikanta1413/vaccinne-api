@@ -149,7 +149,7 @@ npm install
 PORT=5000
 ADMIN_PHONE=9999999999
 ADMIN_PASSWORD=admin@123
-MONGODB_URI=mongodb+srv://dintakurthimanikanta78:Mani%401358@cluster0.0wnnnxc.mongodb.net/vaccine-api?retryWrites=true&w=majority
+MONGODB_URI=mongodb+srv://<USERNAME>:<pASSWORD>@cluster0.0wnnnxc.mongodb.net/<TEST-DB>?retryWrites=true&w=majority
 JWT_SECRET=vaccine_api
 
 # 4. Seed Slots
