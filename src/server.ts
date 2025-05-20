@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import cluster from "cluster";
 import os from "os";
 import swaggerUi from "swagger-ui-express";
-import { swaggerSpec } from "./docs/swagger";
+import swaggerDocument from "./docs/swagger.json";
 import { connectDB } from "./config/db";
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
@@ -27,7 +27,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/slots", slotRoutes);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const PORT = process.env.PORT || 5000;
 
