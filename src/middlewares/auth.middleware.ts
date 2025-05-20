@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
 interface AuthRequest extends Request {
   user?: any;
 }
@@ -21,10 +19,13 @@ export const authenticate = (
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET as string) as { userId: string };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+      userId: string;
+    };
     req.user = decoded;
     next();
   } catch (error) {
+    console.error("Authentication failed for user due to : ", error);
     return res.status(401).json({ message: "Invalid token" });
   }
 };

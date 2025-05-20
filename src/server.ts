@@ -14,6 +14,7 @@ import rateLimit from "express-rate-limit";
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 100, // limit each IP to 100 requests per windowMs
+  message: "Too many requests from IP"
 });
 
 dotenv.config();
@@ -35,10 +36,10 @@ app.get("/", (_req, res) => {
 });
 
 const startServer = async () => {
-    await connectDB();
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
+  await connectDB();
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} with process id : ${process.pid}`);
+  });
 };
 
 if (cluster.isPrimary) {
@@ -51,8 +52,7 @@ if (cluster.isPrimary) {
     cluster.fork();
   });
 } else {
-  startServer(); // your actual server logic
+  startServer(); 
 }
-
 
 export default app;

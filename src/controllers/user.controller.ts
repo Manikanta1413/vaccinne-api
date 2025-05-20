@@ -5,6 +5,7 @@ interface AuthRequest extends Request {
   user?: any;
 }
 
+//  GET /api/user/profile
 export const getUserProfile = async (
   req: AuthRequest,
   res: Response
@@ -18,6 +19,7 @@ export const getUserProfile = async (
 
     return res.status(200).json({ user });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to get profile", error });
+    console.error("Failed to get user profile due to : ", error);
+    return res.status(400).json({ message: "Failed to get user profile", error });
   }
 };

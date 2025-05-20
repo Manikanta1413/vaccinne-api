@@ -1,44 +1,35 @@
 import { Request, Response } from "express";
 import Slot from "../models/slot.model";
 import User from "../models/user.model";
-import mongoose from "mongoose";
 
-// ✅ Get Available Slots
+// GET /api/slots/available?date=YYYY-MM-DD&pinCode=YYYYYY&doseType=first
 export const getAvailableSlots = async (
   req: Request,
   res: Response
 ): Promise<any> => {
-  const { date, pincode, doseType } = req.query;
+  const { date, pinCode, doseType } = req.query;
 
-  if (!date || !pincode || !doseType) {
-    return res
-      .status(400)
-      .json({ message: "Date, pincode and doseType are required" });
+  if (!date || !pinCode || !doseType) {
+    return res.status(400).json({ message: "Date, pinCode and doseType are required" });
   }
-
   try {
-    const slots = await Slot.find({
-      date,
-      pincode,
-      doseType,
-      $where: "this.bookedUsers.length < this.capacity",
-    });
-
-    return res.status(200).json({ availableSlots: slots });
-  } catch (error) {
-    return res.status(500).json({ message: "Failed to fetch slots", error });
+    const slots = await Slot.find({ date, pinCode, doseType });
+    const availableSlots = slots.filter(
+      (slot) => slot.bookedUsers.length < slot.capacity
+    );
+    return res.status(200).json({ availableSlots: availableSlots });
+  } catch (error:any) {
+    console.error("Failed to fetch slots due to : ", error)
+    return res.status(400).json({ message: "Failed to fetch slots", error: error.message });
   }
 };
 
-// ✅ Book Slot (Step 6.2 logic)
+// POST /api/slots/book
 export const bookSlot = async (req: Request, res: Response): Promise<any> => {
-  const userId = (req as any).user.id; // from auth middleware
+  const userId = (req as any).user.userId;
   const { slotId, doseType } = req.body;
-
   if (!slotId || !doseType) {
-    return res
-      .status(400)
-      .json({ message: "Slot ID and dose type are required" });
+    return res.status(400).json({ message: "Slot ID and dose type are required" });
   }
 
   if (!["first", "second"].includes(doseType)) {
@@ -67,9 +58,7 @@ export const bookSlot = async (req: Request, res: Response): Promise<any> => {
 
     if (doseType === "second") {
       if (!user.vaccinationStatus.firstDose.vaccinated) {
-        return res
-          .status(400)
-          .json({ message: "First dose must be completed first" });
+        return res.status(400).json({ message: "First dose must be completed first" });
       }
       if (user.vaccinationStatus.secondDose.slotId) {
         return res.status(400).json({ message: "Second dose already booked" });
@@ -88,35 +77,30 @@ export const bookSlot = async (req: Request, res: Response): Promise<any> => {
     }
 
     await user.save();
-
+    console.log("Slot booked successfully for the user");
     return res.status(200).json({ message: "Slot booked successfully" });
-  } catch (error) {
-    return res.status(500).json({ message: "Error booking slot", error });
+  } catch (error: any) {
+    console.error("Error booking slot due to : ", error);
+    return res.status(400).json({ message: "Error booking slot", error:error.message });
   }
 };
 
+// PUT /api/slots/change
 export const updateSlot = async (req: Request, res: Response) : Promise<any> => {
   try {
     const { userId, newSlotId, doseType } = req.body;
 
     if (!userId || !newSlotId || !doseType) {
-      return res
-        .status(400)
-        .json({ message: "userId, newSlotId, and doseType are required" });
+      return res.status(400).json({ message: "userId, newSlotId, and doseType are required" });
     }
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const currentSlotId =
-      doseType === "first"
-        ? user.vaccinationStatus.firstDose.slotId
-        : user.vaccinationStatus.secondDose.slotId;
+    const currentSlotId = doseType === "first" ? user.vaccinationStatus.firstDose.slotId : user.vaccinationStatus.secondDose.slotId;
 
     if (!currentSlotId) {
-      return res
-        .status(400)
-        .json({ message: `User hasn't booked ${doseType} dose slot yet` });
+      return res.status(400).json({ message: `User hasn't booked ${doseType} dose slot yet` });
     }
 
     const currentSlot = await Slot.findById(currentSlotId);
@@ -128,16 +112,12 @@ export const updateSlot = async (req: Request, res: Response) : Promise<any> => 
 
     // Check if the user is allowed to change slot (must be 24 hours before old slot time)
     const currentTime = new Date();
-    const slotTime = new Date(currentSlot.dateTime); // assume slot.dateTime field exists
+    const slotTime = new Date(currentSlot.date); 
     const timeDiff =
       (slotTime.getTime() - currentTime.getTime()) / (1000 * 60 * 60); // in hours
 
     if (timeDiff < 24) {
-      return res
-        .status(400)
-        .json({
-          message: "Cannot change slot within 24 hours of scheduled time",
-        });
+      return res.status(400).json({ message: "Cannot change slot within 24 hours of scheduled time"});
     }
 
     // Remove user from old slot
@@ -163,12 +143,13 @@ export const updateSlot = async (req: Request, res: Response) : Promise<any> => 
     await user.save();
 
     return res.status(200).json({ message: "Slot updated successfully" });
-  } catch (error) {
-    console.error("Update Slot Error:", error);
-    return res.status(500).json({ message: "Internal Server Error", error });
+  } catch (error:any) {
+    console.error("Update Slot Error due to :", error);
+    return res.status(400).json({ message: "Internal Server Error", error: error.message});
   }
 };
 
+// POST /api/slots/mark-vaccinated  
 export const markUsersAsVaccinated = async (
   req: Request,
   res: Response
@@ -205,15 +186,9 @@ export const markUsersAsVaccinated = async (
         await user.save();
       }
     }
-
-    return res.status(200).json({
-      message: "Vaccination status updated for expired slots",
-    });
-  } catch (error) {
-    console.error("Error in markUsersAsVaccinated:", error);
-    return res.status(500).json({
-      message: "Failed to update vaccination statuses",
-      error,
-    });
+    return res.status(200).json({ message: "Vaccination status updated for expired slots" });
+  } catch (error:any) {
+    console.error("Error in markUsersAsVaccinated due to : ", error);
+    return res.status(400).json({ message: "Failed to update vaccination statuses", error: error.message});
   }
 };

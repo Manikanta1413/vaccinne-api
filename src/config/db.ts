@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import User from "../models/user.model"; // Adjust path if needed
+import User from "../models/user.model"; 
 
 export const connectDB = async () => {
   try {
@@ -17,12 +17,12 @@ export const connectDB = async () => {
 
       const admin = new User({
         name: "Admin",
-        phoneNumber: "9999999999",
+        phoneNumber: process.env.ADMIN_PHONE,
         password: hashedPassword,
         age: 30,
-        pincode: "000000",
+        pinCode: "500000",
         aadharNumber: "999999999999",
-        role: "admin", // make sure your schema supports this
+        role: "admin",
       });
 
       await admin.save();

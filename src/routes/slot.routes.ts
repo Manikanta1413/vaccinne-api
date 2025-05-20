@@ -9,10 +9,16 @@ import { authenticate } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.get("/", getAvailableSlots); // GET /api/slots
-// router.get("/available", authenticate as RequestHandler, getAvailableSlots);
+// GET /api/slots/available --  Displays all the available slots
+router.get("/available", getAvailableSlots); 
+
+// POST /api/slots/book  --  Books the slot selected by the user
 router.post("/book", authenticate as RequestHandler, bookSlot);
+
+// PUT /api/slots/change  --  Updates User slot details
 router.put("/change", authenticate as RequestHandler, updateSlot);
+
+// POST /api/slots/mark-vaccinated  
 router.post("/mark-vaccinated", markUsersAsVaccinated);
 
 export default router;
